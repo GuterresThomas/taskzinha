@@ -79,6 +79,22 @@ let get_tasks = warp::get()
         }
 });
 
+let delete_task = warp::delete()
+.and(warp::path!("tasks" / i32))
+.and(db.clone())
+.and_then(|task_id: i32, client: Arc<Client>| async move {
+    let delete_query = format!("DELETE FROM tasks WHERE id = {}", task_id);
+
+    match client.execute(&delete_query, &[]).await {
+        Ok(rows) if rows == 1 => {
+            Ok(warp::reply::html("success in deletre task"))
+        } 
+        _ => {
+            let error_message = format!("Error in delete task: with id: {}", task_id);
+            Err(custom(CustomError(error_message)))
+        }
+    }
+});
 
 
 
