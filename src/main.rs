@@ -36,6 +36,23 @@ let cors = warp::cors()
 .allow_headers(vec!["Content-Type"]) // Cabeçalhos permitidos
 .max_age(3600); // Tempo máximo de cache para as opções pré-voo
 
+let create_task = warp::post()
+.and(warp::path("tasks"))
+.and(warp::body::json())
+.and(db.clone())
+.and_then(|task: Task, client: Arc<Client>| async move {
+    let insert_query = format!("INSERT INTO tasks (title, description) VALUES ('{}', '{}')", task.title, task.description);
+    match client.execute(&insert_query, &[]).await {
+        Ok(rows) if rows == 1 => {
+            Ok(warp::reply::json(&task))
+        }
+    _ => {
+        let error_message = "failed to add task".to_string();
+        Err(custom(CustomError(error_message)))
+    },
+}
+});
+
 let get_tasks = warp::get()
 .and(warp::path("tasks"))
 .and(db.clone())
@@ -61,6 +78,8 @@ let get_tasks = warp::get()
             }
         }
 });
+
+
 
 
 Ok(())
