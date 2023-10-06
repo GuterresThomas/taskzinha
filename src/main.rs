@@ -97,6 +97,13 @@ let delete_task = warp::delete()
 });
 
 
+let routes = create_task.or(get_tasks).or(delete_task).with(cors);
+
+
+warp::serve(routes)
+.run(([127, 0, 0, 1], 3030))
+.await;
+
 
 Ok(())
 }
