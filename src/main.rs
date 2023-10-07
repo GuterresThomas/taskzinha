@@ -87,7 +87,7 @@ let delete_task = warp::delete()
 
     match client.execute(&delete_query, &[]).await {
         Ok(rows) if rows == 1 => {
-            Ok(warp::reply::html("success in deletre task"))
+            Ok(warp::reply::html("success in delete task"))
         } 
         _ => {
             let error_message = format!("Error in delete task: with id: {}", task_id);
