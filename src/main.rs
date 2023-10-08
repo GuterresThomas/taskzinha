@@ -32,7 +32,7 @@ let db = warp::any().map(move || client.clone());
 
 let cors = warp::cors()
 .allow_any_origin() // Permitir qualquer origem (modificar conforme necessário)
-.allow_methods(vec!["GET", "POST", "DELETE"]) // Métodos permitidos
+.allow_methods(vec!["GET", "POST", "DELETE", "PUT"]) // Métodos permitidos
 .allow_headers(vec!["Content-Type"]) // Cabeçalhos permitidos
 .max_age(3600); // Tempo máximo de cache para as opções pré-voo
 
@@ -105,6 +105,25 @@ let get_task_by_id = warp::get()
         }
     });
 
+    let update_task = warp::put()
+    .and(warp::path!("tasks" / i32))
+    .and(warp::body::json())
+    .and(db.clone())
+    .and_then(|task_id: i32, updated_task: Task, client: Arc<Client>| async move {
+        let update_query = format!(
+            "UPDATE tasks SET title = '{}', description = '{}' WHERE id = {}",
+            updated_task.title, updated_task.description, task_id
+        );
+        match client.execute(&update_query, &[]).await {
+            Ok(rows) if rows == 1 => {
+                Ok(warp::reply::html("Task updated successfully"))
+            }
+            _ => {
+                let error_message = format!("Error updating task with id: {}", task_id);
+                Err(custom(CustomError(error_message)))
+            }
+        }
+    });
 
 
 
@@ -127,7 +146,7 @@ let delete_task = warp::delete()
 });
 
 
-let routes = create_task.or(get_tasks).or(get_task_by_id).or(delete_task).with(cors);
+let routes = create_task.or(get_tasks).or(get_task_by_id).or(delete_task).or(update_task).with(cors);
 
 
 warp::serve(routes)
