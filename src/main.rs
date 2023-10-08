@@ -80,11 +80,11 @@ let get_tasks = warp::get()
 });
 
 let get_task_by_id = warp::get()
-    .and(warp::path!("tasks" / i32))
+    .and(warp::path!("task" / i32))
     .and(db.clone())
     .and_then(|task_id: i32, client: Arc<Client>| async move {
         let query = format!("SELECT id, title, description FROM tasks WHERE id = {}", task_id);
-        match client.query(&query, &[&task_id]).await {
+        match client.query(&query, &[]).await {
             Ok(rows) => {
                 if let Some(row) = rows.iter().next() {
                     let task = Task {
