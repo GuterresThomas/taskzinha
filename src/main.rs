@@ -79,6 +79,36 @@ let get_tasks = warp::get()
         }
 });
 
+let get_task_by_id = warp::get()
+    .and(warp::path!("tasks" / i32))
+    .and(db.clone())
+    .and_then(|task_id: i32, client: Arc<Client>| async move {
+        let query = format!("SELECT id, title, description FROM tasks WHERE id = {}", task_id);
+        match client.query(&query, &[&task_id]).await {
+            Ok(rows) => {
+                if let Some(row) = rows.iter().next() {
+                    let task = Task {
+                        id: row.get("id"),
+                        title: row.get("title"),
+                        description: row.get("description"),
+                    };
+                    Ok(warp::reply::json(&task))
+                } else {
+                    let error_message = format!("Task with id {} not found", task_id);
+                    Err(custom(CustomError(error_message)))
+                }
+            }
+            Err(err) => {
+                let error_message = format!("Error fetching task: {}", err);
+                Err(custom(CustomError(error_message)))
+            }
+        }
+    });
+
+
+
+
+
 let delete_task = warp::delete()
 .and(warp::path!("tasks" / i32))
 .and(db.clone())
@@ -97,7 +127,7 @@ let delete_task = warp::delete()
 });
 
 
-let routes = create_task.or(get_tasks).or(delete_task).with(cors);
+let routes = create_task.or(get_tasks).or(get_task_by_id).or(delete_task).with(cors);
 
 
 warp::serve(routes)
